@@ -16,6 +16,11 @@ from src.utils import data
 # Real releases vary (EA HICP flash ~0 days, GDP ~30-45 days, US CPI ~2 weeks).
 MACRO_RELEASE_LAG_DAYS = {"M": 35, "Q": 60}
 
+# Per-series overrides (days). Policy rates are public the moment the central bank
+# announces them, so there is no publication lag: the value dated at a month end is
+# usable from that date on.
+SERIES_RELEASE_LAG_DAYS = {"ECB_DEPO_RATE": 0, "FED_FUNDS_UPPER": 0}
+
 
 def _cutoff(as_of) -> pd.Timestamp:
     return pd.Timestamp(as_of).normalize()
@@ -37,6 +42,8 @@ def macro_asof(as_of) -> pd.DataFrame:
     df = data.read_macro()
     meta = data.read_macro_metadata().set_index("series_id")["frequency"]
     lag = df["series_id"].map(meta).map(MACRO_RELEASE_LAG_DAYS).fillna(60)
+    override = df["series_id"].map(SERIES_RELEASE_LAG_DAYS)
+    lag = override.fillna(lag)
     available_from = df["date"] + pd.to_timedelta(lag, unit="D")
     return df[available_from <= _cutoff(as_of)]
 

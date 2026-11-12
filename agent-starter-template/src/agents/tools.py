@@ -60,12 +60,19 @@ def macro_snapshot_table(as_of: str) -> str:
     rows = []
     for sid, g in m.groupby("series_id"):
         last, prev = g.iloc[-1], (g.iloc[-2] if len(g) > 1 else g.iloc[-1])
+        # Compare the values as displayed (2 dp), so the LLM never sees "+0.00 up".
+        value, prev_value = round(last["value"], 2), round(prev["value"], 2)
+        change = round(value - prev_value, 2)
+        direction = "up" if change > 0 else "down" if change < 0 else "unchanged"
         rows.append({"series": sid, "indicator": meta.loc[sid, "indicator"], "unit": meta.loc[sid, "unit"],
-                     "ref_period": f"{last['date']:%Y-%m}", "value": last["value"],
-                     "prev": prev["value"]})
+                     "ref_period": f"{last['date']:%Y-%m}", "value": value, "prev": prev_value,
+                     "change": change, "direction": direction})
     df = pd.DataFrame(rows).set_index("series")
+    df["change"] = df["change"].map(lambda x: f"{x:+.2f}")
     return (f"Macro data published by {as_of} (only releases available at that date; "
-            f"assumed release lags {pit.MACRO_RELEASE_LAG_DAYS} days)\n" + df.to_string())
+            f"assumed release lags {pit.MACRO_RELEASE_LAG_DAYS} days, "
+            f"policy rates {pit.SERIES_RELEASE_LAG_DAYS}). "
+            f"change = value - prev (previous period), in the series' unit.\n" + df.to_string())
 
 
 def recent_news_text(as_of: str, lookback_days: int = 14, max_items: int = 30) -> str:

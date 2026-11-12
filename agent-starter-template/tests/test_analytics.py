@@ -74,7 +74,15 @@ def test_pit_views_have_no_future_data(as_of):
     assert pit.financial_asof(as_of).index.max() <= end
     assert pit.news_asof(as_of)["published_at"].max() < end + pd.Timedelta(days=1)
     m = pit.macro_asof(as_of)
-    assert m["date"].max() <= end - pd.Timedelta(days=min(pit.MACRO_RELEASE_LAG_DAYS.values()))
+    assert m["date"].max() <= end
+    lagged = m[~m["series_id"].isin(pit.SERIES_RELEASE_LAG_DAYS)]
+    assert lagged["date"].max() <= end - pd.Timedelta(days=min(pit.MACRO_RELEASE_LAG_DAYS.values()))
+
+
+def test_policy_rates_not_lagged():
+    m = pit.macro_asof("2025-10-31")
+    fed = m[m["series_id"] == "FED_FUNDS_UPPER"].iloc[-1]
+    assert fed["date"] == pd.Timestamp("2025-10-31") and fed["value"] == 4.0  # cut on 2025-10-30
 
 
 def test_weekend_reporting_date_uses_friday():
