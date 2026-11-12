@@ -1,0 +1,32 @@
+series_id,jurisdiction,category,indicator,field,description
+EURUSD,EA,FX,EUR/USD spot,PX_LAST,SYNTHETIC. USD per 1 EUR
+ESTR,EA,Money market,Euro short-term rate,RATE,"SYNTHETIC. Overnight rate, % p.a."
+SOFR,US,Money market,Secured overnight financing rate,RATE,"SYNTHETIC. Overnight rate, % p.a."
+EURIBOR_3M,EA,Money market,Euribor 3M,RATE,SYNTHETIC. % p.a.
+EUROSTOXX50_PX,EA,Equity index,EURO STOXX 50,PX_LAST,SYNTHETIC. Index level (rebased)
+SP500_PX,US,Equity index,S&P 500,PX_LAST,SYNTHETIC. Index level (rebased)
+VIX,US,Volatility,CBOE VIX,PX_LAST,"SYNTHETIC. Implied vol, index points"
+VSTOXX,EA,Volatility,VSTOXX,PX_LAST,"SYNTHETIC. Implied vol, index points"
+DE_10Y_YLD,DE,Government bond,Bund 10Y,YIELD,"SYNTHETIC. Yield to maturity, %"
+DE_2Y_YLD,DE,Government bond,Schatz 2Y,YIELD,"SYNTHETIC. Yield to maturity, %"
+IT_10Y_YLD,IT,Government bond,BTP 10Y,YIELD,"SYNTHETIC. Yield, %"
+FR_10Y_YLD,FR,Government bond,OAT 10Y,YIELD,"SYNTHETIC. Yield, %"
+ES_10Y_YLD,ES,Government bond,Bono 10Y,YIELD,"SYNTHETIC. Yield, %"
+US_10Y_YLD,US,Government bond,UST 10Y,YIELD,"SYNTHETIC. Yield to maturity, %"
+US_2Y_YLD,US,Government bond,UST 2Y,YIELD,"SYNTHETIC. Yield to maturity, %"
+BUND_FUT,DE,Bond future,Euro-Bund future,PX_LAST,SYNTHETIC. Front-month continuous price
+EUR_SWAP_2Y,EA,Swap,EUR IRS 2Y,RATE,SYNTHETIC. % p.a.
+EUR_SWAP_10Y,EA,Swap,EUR IRS 10Y,RATE,SYNTHETIC. % p.a.
+USD_SWAP_2Y,US,Swap,USD SOFR swap 2Y,RATE,SYNTHETIC. % p.a.
+USD_SWAP_10Y,US,Swap,USD SOFR swap 10Y,RATE,SYNTHETIC. % p.a.
+CDS_DE_5Y,DE,CDS,DE sovereign CDS 5Y,SPREAD_BP,SYNTHETIC. bp
+CDS_FR_5Y,FR,CDS,FR sovereign CDS 5Y,SPREAD_BP,SYNTHETIC. bp
+CDS_IT_5Y,IT,CDS,IT sovereign CDS 5Y,SPREAD_BP,SYNTHETIC. bp
+CDS_ES_5Y,ES,CDS,ES sovereign CDS 5Y,SPREAD_BP,SYNTHETIC. bp
+CDS_US_5Y,US,CDS,US sovereign CDS 5Y,SPREAD_BP,SYNTHETIC. bp
+ITRAXX_MAIN,EA,CDS,iTraxx Europe Main 5Y,SPREAD_BP,SYNTHETIC. bp
+CDX_IG,US,CDS,CDX North America IG 5Y,SPREAD_BP,SYNTHETIC. bp
+EUR_IG_OAS,EA,Corporate bond,EUR IG corporate index,OAS_BP,SYNTHETIC. bp
+US_IG_OAS,US,Corporate bond,US IG corporate index,OAS_BP,SYNTHETIC. bp
+BRENT,GLOBAL,Commodity,Brent crude,PX_LAST,SYNTHETIC. USD/bbl
+GOLD,GLOBAL,Commodity,Gold spot,PX_LAST,SYNTHETIC. USD/oz
