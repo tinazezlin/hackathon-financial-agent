@@ -90,6 +90,12 @@ come from the organisers' detailed documents of 16 Nov (`deliverables.pdf`,
     Central Bank Events, Central Bank Interest Rates / Policy, European Central Bank,
     Inflation Data, Employment / Unemployment Data / Policy, Consumer Sentiment Survey
     Data, Fixed Income, Equities, Gold, Crude Oil (no Brent topic: North Sea Crudes).
+    - **[docs] There is no "Federal Reserve" topic** (only the regional Fed banks). Fed news
+      comes through "Central Bank Interest Rates / Policy" plus `title_contains="Fed"`.
+    - **[seen] One unknown topic name makes the whole `read_news` call fail.** Filter the
+      topic list against `find_topics()` first, and log the names that were dropped.
+    - **[seen] Merge repeated headlines and keep the latest version of each story by T.**
+      After that, the noise headline the analyst treated as a "key risk" disappeared.
 
 ## C. Currency & investor perspective
 

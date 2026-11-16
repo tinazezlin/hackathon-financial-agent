@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.session import Session, current_session
-from src.utils import data
+from src.utils import universe
 from src.utils.report import build_report
 
 
@@ -34,7 +34,7 @@ def sha256_weights(weights: dict) -> str:
 
 
 def _check_assets(date: str, weights: dict) -> None:
-    assets = set(data.read_assets_metadata()["ticker"])
+    assets = set(universe.tickers())
     missing, unknown = sorted(assets - set(weights)), sorted(set(weights) - assets)
     if missing or unknown:
         raise ValueError(f"{date}: approved_weights must hold all {len(assets)} assets. "

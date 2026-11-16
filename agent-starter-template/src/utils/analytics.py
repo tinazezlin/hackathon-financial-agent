@@ -134,11 +134,14 @@ def check_constraints(weights: pd.Series, meta: pd.DataFrame, limits: list[Limit
     return v
 
 
-def round_weights(w: pd.Series, decimals: int = 10, sink: str = "EUR_CASH") -> pd.Series:
+def round_weights(w: pd.Series, decimals: int = 10, sink: str | None = None) -> pd.Series:
     """Round for output WITHOUT breaking limits: floor every weight, then put the
     (tiny, positive) residual into a domestic cash asset. Flooring can never push a
     capped group above its cap; plain rounding can (a 20.00004% US weight).
     The official weights.csv uses 10 decimals (deliverables.pdf)."""
+    if sink is None:
+        from src.utils.universe import cash_sink
+        sink = cash_sink()
     f = 10.0**decimals
     # np.round(.., 6) first: 0.13 * 1e10 is 1299999999.9999998 in floating point, and a
     # plain floor would turn it into 0.1299999999.

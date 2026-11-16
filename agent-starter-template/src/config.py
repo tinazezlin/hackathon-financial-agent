@@ -32,7 +32,7 @@ MODEL_ID = os.getenv("MODEL_ID", "openai/gpt-oss-120b")
 
 @dataclass(frozen=True)
 class Limit:
-    field: str         # column in assets-metadata ("asset_class", "jurisdiction", "currency") or "ticker"
+    field: str         # column of universe.assets_meta() ("asset_class", "jurisdiction", ...) or "ticker"
     value: str         # value of that column the limit applies to
     bound: float       # weight bound
     sense: str = "<="  # "<=" (cap) or ">=" (floor)
@@ -50,15 +50,14 @@ LIMITS: list[Limit] = [
 ]
 MAX_SINGLE_ASSET = 0.30    # extra: no single index above 30%
 
-# Neutral strategic allocation the agents tilt away from (team choice).
-# Satisfies all limits above. Sums to 1.
-STRATEGIC_BENCHMARK = {
-    "EUR_CASH": 0.05, "EUR_TBILL_0_1Y": 0.05, "US_CASH": 0.02,
-    "DE_GOV_1_3Y": 0.13, "DE_GOV_7_10Y": 0.08, "DE_GOV_10Y_PLUS": 0.02,
-    "FR_GOV_1_3Y": 0.07, "FR_GOV_7_10Y": 0.05,
-    "IT_GOV_1_3Y": 0.04, "IT_GOV_7_10Y": 0.03,
-    "ES_GOV_1_3Y": 0.04, "ES_GOV_7_10Y": 0.03, "EA_GOV_ALL": 0.05,
-    "US_GOV_1_3Y": 0.05, "US_GOV_3_5Y": 0.03, "US_GOV_7_10Y": 0.01,
-    "EUR_CORP_IG": 0.05, "EUR_CORP_IG_1_5Y": 0.04, "US_CORP_IG": 0.02,
-    "EUROSTOXX50": 0.04, "DAX": 0.02, "CAC40": 0.02, "SP500": 0.06,
+# Neutral strategic allocation the agents tilt away from (team choice), defined by
+# (asset class, region) buckets so it works for whatever 23 assets the real data has:
+# each bucket's weight is split equally across its assets (universe.strategic_benchmark).
+# Region: "US" for US jurisdiction, "EUR" for everything else. Totals: Gov 60%,
+# Corp 11%, Equity 14%, Cash 15%; US 18%. Satisfies all limits above.
+BENCHMARK_BUCKETS = {
+    ("Government Bond", "EUR"): 0.52, ("Government Bond", "US"): 0.08,
+    ("Corporate Bond", "EUR"): 0.09, ("Corporate Bond", "US"): 0.02,
+    ("Equity", "EUR"): 0.08, ("Equity", "US"): 0.06,
+    ("Cash", "EUR"): 0.13, ("Cash", "US"): 0.02,
 }

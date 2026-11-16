@@ -22,10 +22,9 @@ from pydantic import BaseModel, Field
 
 from src.agents import prompts
 from src.agents.tools import ANALYST_TOOLS, asset_statistics_table, market_indicators_table
-from src.config import (LIMITS, LOOKBACK_DAYS, MAX_REVISIONS, MAX_SINGLE_ASSET, MAX_TOOL_ROUNDS, MODEL_ID,
-                        STRATEGIC_BENCHMARK)
+from src.config import LIMITS, LOOKBACK_DAYS, MAX_REVISIONS, MAX_SINGLE_ASSET, MAX_TOOL_ROUNDS, MODEL_ID
 from src.core.llm import get_llm, is_mock, provider
-from src.utils import data, pit
+from src.utils import pit, universe
 from src.utils.analytics import (asset_statistics, check_constraints, exposures, portfolio_metrics,
                                  project_to_constraints, round_weights)
 
@@ -55,12 +54,12 @@ class Proposal(BaseModel):
 
 # --------------------------------------------------------------------------- helpers
 def _tickers() -> list[str]:
-    return data.read_assets_metadata()["ticker"].tolist()
+    return universe.tickers()
 
 
 def _universe_table() -> str:
-    m = data.read_assets_metadata()[["ticker", "asset_class", "jurisdiction", "currency", "duration"]]
-    m = m.assign(benchmark=m["ticker"].map(STRATEGIC_BENCHMARK).fillna(0).round(3))
+    m = universe.assets_meta()[["ticker", "name", "asset_class", "jurisdiction", "currency", "duration"]]
+    m = m.assign(benchmark=m["ticker"].map(universe.strategic_benchmark()).round(4))
     return m.to_string(index=False)
 
 
@@ -146,7 +145,7 @@ def analyst_signals(state: dict) -> dict:
 # --------------------------------------------------------------------------- portfolio manager
 def portfolio_manager(state: dict) -> dict:
     tickers = _tickers()
-    bench = pd.Series(STRATEGIC_BENCHMARK).reindex(tickers).fillna(0.0)
+    bench = universe.strategic_benchmark().reindex(tickers).fillna(0.0)
     if is_mock():
         view = pd.Series({s["ticker"]: s["view"] * s["confidence"] for s in state["signals"]})
         w = (bench * (1 + 0.5 * view.reindex(tickers).fillna(0))).clip(lower=0)
@@ -172,7 +171,7 @@ def portfolio_manager(state: dict) -> dict:
 
 # --------------------------------------------------------------------------- risk review (no LLM)
 def risk_review(state: dict) -> dict:
-    meta = data.read_assets_metadata()
+    meta = universe.assets_meta()
     tickers = meta["ticker"].tolist()
     raw = pd.Series(state["proposed_weights"]).reindex(tickers).fillna(0.0)
     adjustments = list(state.get("adjustments") or [])
@@ -196,11 +195,11 @@ def risk_review(state: dict) -> dict:
         adjustments.append(f"Still violating after {rev} revision(s): {violations}. Projected onto the "
                            f"feasible set (least-squares), turnover {moved:.2%}.")
 
-    w = round_weights(w)  # final rounding that cannot break limits
+    w = round_weights(w, sink=universe.cash_sink(meta))  # final rounding that cannot break limits
     assert not check_constraints(w, meta), f"final portfolio not compliant: {check_constraints(w, meta)}"
 
     rets = pit.returns_base_ccy_asof(state["as_of_date"], LOOKBACK_DAYS)
-    bench = pd.Series(STRATEGIC_BENCHMARK).reindex(tickers).fillna(0.0)
+    bench = universe.strategic_benchmark(meta).reindex(tickers).fillna(0.0)
     metrics = portfolio_metrics(w, rets, meta, benchmark=bench)
     expo = {f: exposures(w, meta, f).round(4).to_dict() for f in ("asset_class", "jurisdiction", "currency")}
     return {"approved_weights": w.to_dict(), "violations": violations, "risk_feedback": "",

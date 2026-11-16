@@ -41,7 +41,10 @@ src/core/                    = hackathon "DO NOT CHANGE" folder (mocked here)
   results.py                 checks approved_weights has all 23 assets, calls build_report(),
                              write_weights(results, session) -> weights.csv (10 decimals)
 src/utils/
-  data.py                    read_assets / read_financial / read_macro / read_news (raw)
+  data.py                    official-style readers: read_assets/read_financial/read_macro(end_date=)
+  news.py                    official-style news: read_news(start, end, topics=, title_contains=), find_topics
+  universe.py                ADAPTER: official codes/categories -> our fields (name, asset_class,
+                             region, currency, estimated duration), rule-based benchmark, macro y/y
   pit.py                     point-in-time views, the ONLY data access decisions should use
   analytics.py               quant core: stats, FX conversion, VaR/ES, risk contributions,
                              constraint check, least-squares projection, safe rounding
@@ -80,24 +83,25 @@ outputs/<session id>/          exactly 7 files
 The final graph state must hold `approved_weights` with all 23 assets (zeros included).
 Submit the folder plus the Langfuse session URL (`session.url`).
 
-## Synthetic data (guessing the real formats)
-
-> The organisers' `data-detailed.pdf` shows the real formats differ (long files, day-first
-> dates, code identifiers, macro dated at the start of the month, versioned news with topic
-> lists). Aligning the synthetic data with them is the next step.
+## Synthetic data (in the official formats of data-detailed.pdf)
 
 | file | shape |
 |---|---|
-| `assets.csv` | wide: `date` + 23 total-return index levels (local currency) |
-| `assets-metadata.csv` | ticker, name, asset_class, jurisdiction, currency, duration |
-| `financial.csv` | long: date, series_id, value (31 series: FX, rates, vol, CDS, swaps, commodities) |
-| `macro.csv` | long: date (= **reference period end**), series_id, value (monthly/quarterly) |
-| `news.csv` | published_at, headline, body, topic, source (~5k synthetic headlines) |
+| `assets.csv` | long: `date` (dd/mm/yyyy), `index` (code, e.g. `IBBEU008E`), `price`, `price_description` |
+| `assets_metadata.csv` | `jurisdiction` (EUR/US/DE/IT/FR), `category` (Gov Bonds, Corp Bonds, Equities, Cash), `indicator`, `index`, `field`, `description`. Gov bonds are labelled "Total Return Yield" but hold index levels, as in the real file |
+| `financial.csv` + metadata | same long format, Bloomberg-like codes (`GDBR10 Index`, `EURUSD Curncy`, ...) |
+| `macro.csv` + metadata | `date` = FIRST day of the reference month (PMIs: last day; quarterly: first day of the quarter), `identifier`, `value`; HICP/CPI as price INDICES |
+| `news.csv` | stand-in for the parquet files: versioned stories (`story_id`, `version`, `version_role`), UTC `published_at`, `topic_name` list (exact Reuters names) |
+| `news_topics.csv` | topic, count |
 
-The paths roughly follow the shape of 2018-2026 (COVID, 2022 hikes, 2024-25 cuts).
-**Oct 2025 - Mar 2026 is invented**, e.g. an ECB cut on 2026-03-18 that did not
-necessarily happen. That's useful: if the LLM "knows" something that isn't in the
+The universe (16 government bonds, 2 corporate, 3 equity, 2 cash) is our guess. The paths
+roughly follow 2018-2026 (COVID, 2022 hikes, 2024-25 cuts); **Oct 2025 - Mar 2026 is
+invented**, e.g. an ECB cut on 2026-03-18. If the LLM "knows" something that isn't in the
 tools' output, it's leaking memory.
+
+**On the day:** point `src/utils/data.py`/`news.py` at the official modules (or delete
+ours), then fix `src/utils/universe.py` (category names, `MARKET_SERIES` codes, duration
+parsing) until `pytest` passes. Nothing else should need to change.
 
 ## Practice ideas
 

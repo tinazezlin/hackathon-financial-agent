@@ -1,0 +1,30 @@
+﻿jurisdiction,category,indicator,index,field,description
+EUR,Currency,EUR/USD spot - SYNTHETIC,EURUSD Curncy,close_price,Close Price
+EUR,Money Market,Euro short-term rate - SYNTHETIC,ESTRON Index,close_price,Close Price
+US,Money Market,Secured overnight financing rate - SYNTHETIC,SOFRRATE Index,close_price,Close Price
+EUR,Money Market,Euribor 3M - SYNTHETIC,EUR003M Index,close_price,Close Price
+EUR,Equity Index,EURO STOXX 50 - SYNTHETIC,SX5E Index,close_price,Close Price
+US,Equity Index,S&P 500 - SYNTHETIC,SPX Index,close_price,Close Price
+US,Volatility,CBOE VIX - SYNTHETIC,VIX Index,close_price,Close Price
+EUR,Volatility,VSTOXX - SYNTHETIC,V2X Index,close_price,Close Price
+DE,Government Bond Yield,Bund 10Y - SYNTHETIC,GDBR10 Index,close_price,Close Price
+DE,Government Bond Yield,Schatz 2Y - SYNTHETIC,GDBR2 Index,close_price,Close Price
+IT,Government Bond Yield,BTP 10Y - SYNTHETIC,GBTPGR10 Index,close_price,Close Price
+FR,Government Bond Yield,OAT 10Y - SYNTHETIC,GFRN10 Index,close_price,Close Price
+US,Government Bond Yield,UST 10Y - SYNTHETIC,USGG10YR Index,close_price,Close Price
+US,Government Bond Yield,UST 2Y - SYNTHETIC,USGG2YR Index,close_price,Close Price
+DE,Bond Futures,Euro-Bund future - SYNTHETIC,RX1 Comdty,close_price,Close Price
+EUR,Interest Rate Swaps,EUR IRS 2Y - SYNTHETIC,EUSA2 Curncy,close_price,Close Price
+EUR,Interest Rate Swaps,EUR IRS 10Y - SYNTHETIC,EUSA10 Curncy,close_price,Close Price
+US,Interest Rate Swaps,USD SOFR swap 2Y - SYNTHETIC,USOSFR2 Curncy,close_price,Close Price
+US,Interest Rate Swaps,USD SOFR swap 10Y - SYNTHETIC,USOSFR10 Curncy,close_price,Close Price
+DE,Credit Default Swaps,DE sovereign CDS 5Y - SYNTHETIC,GRMN CDS USD SR 5Y,close_price,Close Price
+FR,Credit Default Swaps,FR sovereign CDS 5Y - SYNTHETIC,FRTR CDS USD SR 5Y,close_price,Close Price
+IT,Credit Default Swaps,IT sovereign CDS 5Y - SYNTHETIC,ITAL CDS USD SR 5Y,close_price,Close Price
+US,Credit Default Swaps,US sovereign CDS 5Y - SYNTHETIC,USGB CDS EUR SR 5Y,close_price,Close Price
+EUR,Credit Default Swaps,iTraxx Europe Main 5Y - SYNTHETIC,ITRXEBE Index,close_price,Close Price
+US,Credit Default Swaps,CDX North America IG 5Y - SYNTHETIC,CDXIG5 Index,close_price,Close Price
+EUR,Corporate Bond Index,EUR IG corporate index - SYNTHETIC,LECPOAS Index,close_price,Close Price
+US,Corporate Bond Index,US IG corporate index - SYNTHETIC,LUACOAS Index,close_price,Close Price
+US,Commodities,Brent crude - SYNTHETIC,CO1 Comdty,close_price,Close Price
+US,Commodities,Gold spot - SYNTHETIC,XAU Curncy,close_price,Close Price

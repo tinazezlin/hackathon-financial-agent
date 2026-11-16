@@ -23,8 +23,7 @@ from reportlab.lib.units import cm  # noqa: E402
 from reportlab.platypus import (Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,  # noqa: E402
                                 TableStyle)
 
-from src.config import STRATEGIC_BENCHMARK  # noqa: E402
-from src.utils import data, pit  # noqa: E402
+from src.utils import pit, universe  # noqa: E402
 
 STYLES = getSampleStyleSheet()
 
@@ -101,7 +100,8 @@ def _fig_to_image(fig, width_cm=17) -> Image:
 def _table(df: pd.DataFrame, fmt="{:.1%}") -> Table:
     rows = [[df.index.name or ""] + list(df.columns)]
     for idx, r in df.iterrows():
-        rows.append([str(idx)] + [fmt.format(v) if isinstance(v, (int, float)) else str(v) for v in r])
+        rows.append([str(idx).translate(_UNICODE_FIX)]
+                    + [fmt.format(v) if isinstance(v, (int, float)) else str(v).translate(_UNICODE_FIX) for v in r])
     t = Table(rows, hAlign="LEFT")
     t.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 7), ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
                            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey)]))
@@ -120,18 +120,19 @@ def _chart_weights(w: pd.Series, b: pd.Series) -> Image:
 
 def _chart_markets(as_of: str) -> Image:
     lv = pit.assets_asof(as_of).iloc[-253:]
-    meta = data.read_assets_metadata().set_index("ticker")
+    meta = universe.assets_meta().set_index("ticker")
     fin = pit.financial_asof(as_of).iloc[-253:]
+    label = {c: universe.MARKET_SERIES.get(c, (c,))[0] for c in fin.columns}
     fig, axes = plt.subplots(1, 3, figsize=(13, 3.6))
     rets = lv.pct_change(fill_method=None).fillna(0)
     for cls, g in meta.groupby("asset_class"):
         (1 + rets[g.index].mean(axis=1)).cumprod().plot(ax=axes[0], label=cls)
     axes[0].set_title("Asset classes, 12m (equal-wt, local ccy)")
     axes[0].legend(fontsize=7)
-    fin[["DE_10Y_YLD", "US_10Y_YLD", "IT_10Y_YLD"]].plot(ax=axes[1])
+    fin[[c for c in universe.YIELDS_10Y if c in fin]].rename(columns=label).plot(ax=axes[1])
     axes[1].set_title("10Y government yields (%)")
     axes[1].legend(fontsize=7)
-    fin[["VIX", "VSTOXX"]].plot(ax=axes[2])
+    fin[[c for c in universe.IMPLIED_VOL if c in fin]].rename(columns=label).plot(ax=axes[2])
     axes[2].set_title("Implied volatility")
     axes[2].legend(fontsize=7)
     for ax in axes:
@@ -144,8 +145,9 @@ def build_report(result, path):
     """Write the PDF report for one reporting date. DO NOT change name/signature."""
     as_of = result["as_of_date"]
     path = Path(path)
-    w = pd.Series(result["approved_weights"])
-    b = pd.Series(STRATEGIC_BENCHMARK)
+    names = universe.names()                       # official codes -> readable names
+    w = pd.Series(result["approved_weights"]).rename(index=names)
+    b = universe.strategic_benchmark().rename(index=names)
     m = result.get("risk_metrics", {})
     expo = result.get("exposures", {})
 
@@ -166,7 +168,7 @@ def build_report(result, path):
 
     sig = pd.DataFrame(result.get("signals", []))
     if not sig.empty:
-        sig = sig.set_index("ticker")[["view", "confidence", "reason"]]
+        sig = sig.assign(asset=sig["ticker"].map(names)).set_index("asset")[["view", "confidence", "reason"]]
         sig["reason"] = sig["reason"].str.slice(0, 90)
         story += [Spacer(1, 6), Paragraph("Analyst views", STYLES["Heading3"]), _table(sig, "{}")]
 

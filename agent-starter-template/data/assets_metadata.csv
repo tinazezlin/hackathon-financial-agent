@@ -1,0 +1,24 @@
+﻿jurisdiction,category,indicator,index,field,description
+DE,Gov Bonds,DE Government Bond 1-3Y Total Return Index (EUR) - SYNTHETIC,IBGDE13E,TOT_RETURN,Total Return Yield
+DE,Gov Bonds,DE Government Bond 3-5Y Total Return Index (EUR) - SYNTHETIC,IBGDE35E,TOT_RETURN,Total Return Yield
+DE,Gov Bonds,DE Government Bond 7-10Y Total Return Index (EUR) - SYNTHETIC,IBGDE710E,TOT_RETURN,Total Return Yield
+DE,Gov Bonds,DE Government Bond 10Y+ Total Return Index (EUR) - SYNTHETIC,IBGDE10PE,TOT_RETURN,Total Return Yield
+FR,Gov Bonds,FR Government Bond 1-3Y Total Return Index (EUR) - SYNTHETIC,IBGFR13E,TOT_RETURN,Total Return Yield
+FR,Gov Bonds,FR Government Bond 7-10Y Total Return Index (EUR) - SYNTHETIC,IBGFR710E,TOT_RETURN,Total Return Yield
+IT,Gov Bonds,IT Government Bond 1-3Y Total Return Index (EUR) - SYNTHETIC,IBGIT13E,TOT_RETURN,Total Return Yield
+IT,Gov Bonds,IT Government Bond 7-10Y Total Return Index (EUR) - SYNTHETIC,IBGIT710E,TOT_RETURN,Total Return Yield
+EUR,Gov Bonds,Euro Area Government Bond All Maturities Total Return Index (EUR) - SYNTHETIC,IBBEU008E,TOT_RETURN,Total Return Yield
+EUR,Gov Bonds,Euro Area Government Bond 1-3Y Total Return Index (EUR) - SYNTHETIC,IBGEU13E,TOT_RETURN,Total Return Yield
+EUR,Gov Bonds,Euro Area Government Bond 7-10Y Total Return Index (EUR) - SYNTHETIC,IBGEU710E,TOT_RETURN,Total Return Yield
+US,Gov Bonds,US Treasury 1-3Y Total Return Index (USD) - SYNTHETIC,IBGUS13U,TOT_RETURN,Total Return Yield
+US,Gov Bonds,US Treasury 3-5Y Total Return Index (USD) - SYNTHETIC,IBGUS35U,TOT_RETURN,Total Return Yield
+US,Gov Bonds,US Treasury 7-10Y Total Return Index (USD) - SYNTHETIC,IBGUS710U,TOT_RETURN,Total Return Yield
+US,Gov Bonds,US Treasury 10Y+ Total Return Index (USD) - SYNTHETIC,IBGUS10PU,TOT_RETURN,Total Return Yield
+US,Gov Bonds,US Treasury All Maturities Total Return Index (USD) - SYNTHETIC,IBGUS00U,TOT_RETURN,Total Return Yield
+EUR,Corp Bonds,EUR Corporate Investment Grade Total Return Index (EUR) - SYNTHETIC,ICREUIGE,tri_today,Total return index level on the pricing date
+US,Corp Bonds,US Corporate Investment Grade Total Return Index (USD) - SYNTHETIC,ICRUSIGU,tri_today,Total return index level on the pricing date
+EUR,Equities,EURO STOXX 50 Total Return Index (EUR) - SYNTHETIC,SX5T,tri_today,Total return index level on the pricing date
+DE,Equities,DAX Total Return Index (EUR) - SYNTHETIC,DAXK,tri_today,Total return index level on the pricing date
+US,Equities,S&P 500 Total Return Index (USD) - SYNTHETIC,SPXT,tri_today,Total return index level on the pricing date
+EUR,Cash,EUR Cash (ESTR compounded) Total Return Index (EUR) - SYNTHETIC,ESTRCMPE,tri_today,Total return index level on the pricing date
+US,Cash,USD Cash (SOFR compounded) Total Return Index (USD) - SYNTHETIC,SOFRCMPU,tri_today,Total return index level on the pricing date

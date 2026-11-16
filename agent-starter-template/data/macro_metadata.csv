@@ -1,0 +1,20 @@
+﻿identifier,jurisdiction,category,indicator,database,frequencyDescription,dataType,aggregationTypeDescription
+P023ZH,EUR,Prices,HICP - Overall index - SYNTHETIC,ECB Data Portal,Monthly,INDEX,Average
+P023ZX,EUR,Prices,HICP - All-items excluding energy and food - SYNTHETIC,ECB Data Portal,Monthly,INDEX,Average
+P023DE,DE,Prices,HICP - Overall index - SYNTHETIC,ECB Data Portal,Monthly,INDEX,Average
+P023FR,FR,Prices,HICP - Overall index - SYNTHETIC,ECB Data Portal,Monthly,INDEX,Average
+P023IT,IT,Prices,HICP - Overall index - SYNTHETIC,ECB Data Portal,Monthly,INDEX,Average
+CPIAUC,US,Prices,CPI - All items - SYNTHETIC,FRED,Monthly,INDEX,Average
+CPILFE,US,Prices,CPI - All items less food and energy - SYNTHETIC,FRED,Monthly,INDEX,Average
+LRHUTT,EUR,Labour market,Unemployment rate - SYNTHETIC,Eurostat,Monthly,PERCENT,Average
+UNRATE,US,Labour market,Unemployment rate - SYNTHETIC,FRED,Monthly,PERCENT,Average
+PMIMEZ,EUR,Business surveys,Manufacturing PMI - SYNTHETIC,S&P Global,Monthly,INDEX,Average
+ISMMAN,US,Business surveys,ISM manufacturing PMI - SYNTHETIC,ISM,Monthly,INDEX,Average
+CONFEZ,EUR,Consumer surveys,Consumer confidence indicator - SYNTHETIC,European Commission,Monthly,BALANCE,Average
+UMCSNT,US,Consumer surveys,University of Michigan consumer sentiment - SYNTHETIC,FRED,Monthly,INDEX,Average
+M3EZYY,EUR,Money,"Monetary aggregate M3, annual growth rate - SYNTHETIC",ECB Data Portal,Monthly,PERCENT_CHANGE,End of period
+ECBDFR,EUR,Policy rates,ECB deposit facility rate - SYNTHETIC,ECB Data Portal,Monthly,PERCENT,End of period
+FDTRUP,US,Policy rates,"Fed funds target range, upper bound - SYNTHETIC",FRED,Monthly,PERCENT,End of period
+GDPEZQ,EUR,National accounts,"Real GDP, % change q/q - SYNTHETIC",Eurostat,Quarterly,PERCENT_CHANGE,Sum
+GDPDEQ,DE,National accounts,"Real GDP, % change q/q - SYNTHETIC",Eurostat,Quarterly,PERCENT_CHANGE,Sum
+GDPUSQ,US,National accounts,"Real GDP, % change q/q annualised - SYNTHETIC",FRED,Quarterly,PERCENT_CHANGE,Sum

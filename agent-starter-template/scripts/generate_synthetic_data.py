@@ -5,14 +5,23 @@ Everything here is invented. Paths are loosely shaped like 2018-2026 history
 that agents have something "realistic" to reason about, but numbers, dates and
 headlines are NOT real and the Oct 2025 - Mar 2026 period is pure fiction.
 
-Files written to data/ (formats are our guess; the real files may differ):
-    assets.csv              wide: date + one column per index (level, local ccy)
-    assets-metadata.csv     ticker, name, asset_class, jurisdiction, currency, duration, ...
-    financial.csv           long: date, series_id, value
-    financial-metadata.csv  series_id, jurisdiction, category, indicator, field, description
-    macro.csv               long: date (reference period end), series_id, value
-    macro-metadata.csv      series_id, jurisdiction, indicator, frequency, unit, data_type, description
-    news.csv                published_at, headline, body, topic, source
+Files written to data/, in the formats of the organisers' data-detailed.pdf:
+    assets.csv              long: date (dd/mm/yyyy), index, price, price_description
+    assets_metadata.csv     jurisdiction, category, indicator, index, field, description (utf-8-sig)
+    financial.csv           long: date (dd/mm/yyyy), index, price, price_description
+    financial_metadata.csv  jurisdiction, category, indicator, index, field, description (utf-8-sig)
+    macro.csv               long: date (dd/mm/yyyy, FIRST day of the reference month; PMI on the
+                            LAST day; quarterly on the first day of the quarter), identifier, value
+    macro_metadata.csv      identifier, jurisdiction, category, indicator, database,
+                            frequencyDescription, dataType, aggregationTypeDescription (utf-8-sig)
+    news.csv                stand-in for the parquet files: published_at (UTC), date,
+                            version_created, story_id, version, version_role, title,
+                            topic_name ("|"-separated list), has_body, body
+    news_topics.csv         topic, count
+
+Internally the script uses readable names (DE_GOV_1_3Y, ...); the files use codes, as
+the real data does. The 23-asset universe (16 government bonds, no Spain, jurisdictions
+EUR/US/DE/IT/FR) is our guess at the real one.
 
 Run:  .venv/bin/python scripts/generate_synthetic_data.py
 """
@@ -159,28 +168,31 @@ def add(ticker, name, cls, jur, ccy, dur, ret):
     ASSETS.append((ticker, name, cls, jur, ccy, dur, ret))
 
 
-for jur in ["DE", "FR", "IT", "ES"]:
-    s10 = SPREAD_10Y[jur]
-    for bucket, mat, dur in [("1-3Y", 2.0, 1.9), ("7-10Y", 8.5, 7.6)]:
-        spread = s10 * (0.45 if mat < 5 else 1.0)
-        y = tenor_yield(DE_2Y, DE_10Y, mat) + spread
-        add(f"{jur}_GOV_{bucket.replace('-', '_')}", f"{jur} Government Bond {bucket}",
-            "Government Bond", jur, "EUR", dur, bond_returns(y, dur))
-# EA aggregate & long end
-y_ea = tenor_yield(DE_2Y, DE_10Y, 7) + 0.25 * SPREAD_10Y["FR"] + 0.2 * SPREAD_10Y["IT"] + 0.12 * SPREAD_10Y["ES"]
-add("EA_GOV_ALL", "Euro Area Government Bond All Maturities", "Government Bond", "EA", "EUR", 7.2,
-    bond_returns(y_ea, 7.2))
-add("DE_GOV_10Y_PLUS", "DE Government Bond 10Y+", "Government Bond", "DE", "EUR", 16.5,
-    bond_returns(tenor_yield(DE_2Y, DE_10Y, 20) + 0.15, 16.5))
-for bucket, mat, dur in [("1_3Y", 2.0, 1.9), ("3_5Y", 4.0, 3.8), ("7_10Y", 8.5, 7.4)]:
-    add(f"US_GOV_{bucket}", f"US Treasury {bucket.replace('_', '-')}", "Government Bond", "US", "USD", dur,
+GOV = [  # ticker, jurisdiction, bucket label, maturity, duration, spread factor source
+    ("DE_GOV_1_3Y", "DE", "1-3Y", 2.0, 1.9), ("DE_GOV_3_5Y", "DE", "3-5Y", 4.0, 3.8),
+    ("DE_GOV_7_10Y", "DE", "7-10Y", 8.5, 7.6), ("DE_GOV_10Y_PLUS", "DE", "10Y+", 20.0, 16.5),
+    ("FR_GOV_1_3Y", "FR", "1-3Y", 2.0, 1.9), ("FR_GOV_7_10Y", "FR", "7-10Y", 8.5, 7.6),
+    ("IT_GOV_1_3Y", "IT", "1-3Y", 2.0, 1.9), ("IT_GOV_7_10Y", "IT", "7-10Y", 8.5, 7.4),
+]
+for tk, jur, bucket, mat, dur in GOV:
+    spread = SPREAD_10Y[jur] * (0.45 if mat < 5 else 1.0) + (0.15 if mat > 10 else 0.0)
+    add(tk, f"{jur} Government Bond {bucket}", "Government Bond", jur, "EUR", dur,
+        bond_returns(tenor_yield(DE_2Y, DE_10Y, mat) + spread, dur))
+# Euro area aggregates: Bund curve + a GDP-weighted share of the FR/IT/ES spreads
+ea_spread = 0.25 * SPREAD_10Y["FR"] + 0.2 * SPREAD_10Y["IT"] + 0.12 * SPREAD_10Y["ES"]
+for tk, bucket, mat, dur in [("EA_GOV_ALL", "All Maturities", 7.0, 7.2), ("EA_GOV_1_3Y", "1-3Y", 2.0, 1.9),
+                             ("EA_GOV_7_10Y", "7-10Y", 8.5, 7.5)]:
+    add(tk, f"Euro Area Government Bond {bucket}", "Government Bond", "EA", "EUR", dur,
+        bond_returns(tenor_yield(DE_2Y, DE_10Y, mat) + ea_spread * (0.5 if mat < 5 else 1.0), dur))
+for tk, bucket, mat, dur in [("US_GOV_1_3Y", "1-3Y", 2.0, 1.9), ("US_GOV_3_5Y", "3-5Y", 4.0, 3.8),
+                             ("US_GOV_7_10Y", "7-10Y", 8.5, 7.4), ("US_GOV_10Y_PLUS", "10Y+", 20.0, 15.8),
+                             ("US_GOV_ALL", "All Maturities", 7.0, 6.0)]:
+    add(tk, f"US Treasury {bucket}", "Government Bond", "US", "USD", dur,
         bond_returns(tenor_yield(US_2Y, US_10Y, mat), dur))
 
 eur_corp_y = tenor_yield(DE_2Y, DE_10Y, 5) + 0.25 + EUR_IG_OAS
 add("EUR_CORP_IG", "EUR Corporate Investment Grade", "Corporate Bond", "EA", "EUR", 4.5,
     bond_returns(eur_corp_y, 4.5))
-add("EUR_CORP_IG_1_5Y", "EUR Corporate Investment Grade 1-5Y", "Corporate Bond", "EA", "EUR", 2.7,
-    bond_returns(tenor_yield(DE_2Y, DE_10Y, 3) + 0.2 + 0.8 * EUR_IG_OAS, 2.7))
 add("US_CORP_IG", "US Corporate Investment Grade", "Corporate Bond", "US", "USD", 6.9,
     bond_returns(tenor_yield(US_2Y, US_10Y, 9) + US_IG_OAS, 6.9))
 
@@ -222,12 +234,9 @@ SP_PATH = anchors({"2018-01-01": 100, "2018-01-26": 107, "2018-02-08": 97, "2018
                    "2026-03-31": 253})
 DAX_REL = anchors({"2018-01-01": 1.0, "2019-12-31": 0.97, "2020-12-31": 0.99, "2022-09-29": 0.95,
                    "2024-12-31": 1.02, "2025-06-30": 1.08, "2026-03-31": 1.09})
-CAC_REL = anchors({"2018-01-01": 1.0, "2021-12-31": 1.02, "2024-06-30": 0.97, "2025-12-31": 0.93,
-                   "2026-03-31": 0.92})
 EQUITIES = [  # ticker, name, jur, ccy, anchor path, base vol, beta to global factor
     ("EUROSTOXX50", "EURO STOXX 50", "EA", "EUR", ES_PATH, 0.16, 0.90),
     ("DAX", "DAX", "DE", "EUR", ES_PATH * DAX_REL, 0.17, 0.85),
-    ("CAC40", "CAC 40", "FR", "EUR", ES_PATH * CAC_REL, 0.16, 0.85),
     ("SP500", "S&P 500", "US", "USD", SP_PATH, 0.16, 0.80),
 ]
 for tk, name, jur, ccy, path, vol, beta in EQUITIES:
@@ -242,8 +251,6 @@ for tk, name, jur, ccy, path, vol, beta in EQUITIES:
 
 add("EUR_CASH", "EUR Cash (ESTR compounded)", "Cash", "EA", "EUR", 0.0, ESTR / 100 / 252)
 add("US_CASH", "USD Cash (SOFR compounded)", "Cash", "US", "USD", 0.0, SOFR / 100 / 252)
-add("EUR_TBILL_0_1Y", "Euro Area Treasury Bills 0-1Y", "Cash", "EA", "EUR", 0.45,
-    bond_returns(0.5 * ESTR + 0.5 * shift_forward(ESTR, 63) + 0.05, 0.45))
 
 assert len(ASSETS) == 23, len(ASSETS)
 
@@ -284,7 +291,6 @@ CDS = {
     "CDS_DE_5Y": 12 + 4 * (EUR_IG_OAS - 1) + ou(N, 0.4, 0.05),
     "CDS_FR_5Y": 20 + 40 * SPREAD_10Y["FR"] + ou(N, 0.8, 0.05),
     "CDS_IT_5Y": 30 + 55 * SPREAD_10Y["IT"] + ou(N, 2.0, 0.05),
-    "CDS_ES_5Y": 20 + 40 * SPREAD_10Y["ES"] + ou(N, 1.0, 0.05),
     "CDS_US_5Y": 20 + 8 * (US_IG_OAS - 1) + ou(N, 0.6, 0.05),
 }
 
@@ -302,7 +308,6 @@ fin_series = {
     "DE_2Y_YLD": (DE_2Y, "DE", "Government bond", "Schatz 2Y", "YIELD", "Yield to maturity, %"),
     "IT_10Y_YLD": (DE_10Y + SPREAD_10Y["IT"], "IT", "Government bond", "BTP 10Y", "YIELD", "Yield, %"),
     "FR_10Y_YLD": (DE_10Y + SPREAD_10Y["FR"], "FR", "Government bond", "OAT 10Y", "YIELD", "Yield, %"),
-    "ES_10Y_YLD": (DE_10Y + SPREAD_10Y["ES"], "ES", "Government bond", "Bono 10Y", "YIELD", "Yield, %"),
     "US_10Y_YLD": (US_10Y, "US", "Government bond", "UST 10Y", "YIELD", "Yield to maturity, %"),
     "US_2Y_YLD": (US_2Y, "US", "Government bond", "UST 2Y", "YIELD", "Yield to maturity, %"),
     "BUND_FUT": (130 - 8.5 * (DE_10Y - 0.5) + ou(N, 0.05, 0.2), "DE", "Bond future", "Euro-Bund future",
@@ -365,7 +370,7 @@ macro_series = {
                          "M", "% y/y", "Inflation"),
     **{f"{c}_HICP_YOY": (M_DATES, EA_HICP + off + ou(NM, 0.25, 0.3), c, "HICP headline inflation", "M",
                          "% y/y", "Inflation")
-       for c, off in [("DE", 0.2), ("FR", -0.4), ("IT", 0.1), ("ES", 0.3)]},
+       for c, off in [("DE", 0.2), ("FR", -0.4), ("IT", 0.1)]},
     "US_CPI_YOY": (M_DATES, US_CPI, "US", "CPI headline inflation", "M", "% y/y", "Inflation"),
     "US_CORE_CPI_YOY": (M_DATES, 0.6 * US_CPI + 1.0 + ou(NM, 0.08, 0.3), "US", "CPI core inflation", "M",
                         "% y/y", "Inflation"),
@@ -434,7 +439,7 @@ for sid, daily in [("ECB_DEPO_RATE", ECB_DEPO), ("FED_FUNDS_UPPER", FED_UPPER)]:
 macro_frames = []
 for sid, (d, v, *_r) in macro_series.items():
     s = pd.Series(np.round(v, 2), index=d)
-    if sid in ("ES_HICP_YOY", "EA_M3_YOY"):
+    if sid in ("IT_HICP_YOY", "EA_M3_YOY"):
         s[s.index < "2012-01-01"] = np.nan   # coverage varies by indicator
     macro_frames.append(pd.DataFrame({"date": d, "series_id": sid, "value": s.to_numpy()}).dropna())
 macro = pd.concat(macro_frames, ignore_index=True)
@@ -537,22 +542,193 @@ news_df = pd.DataFrame(news)
 news_df = news_df[news_df.published_at <= pd.Timestamp(END) + pd.Timedelta(hours=23, minutes=59)]
 news_df = news_df.sort_values("published_at").reset_index(drop=True)
 
+# --------------------------------------------------------------------------- export (official formats)
+DAYFIRST = "%d/%m/%Y"
+JUR = {"EA": "EUR", "GLOBAL": "US"}            # official jurisdictions: EUR, US, DE, IT, FR
+
+# internal ticker -> (official index code, indicator name, category)
+CATEGORY = {"Government Bond": "Gov Bonds", "Corporate Bond": "Corp Bonds", "Equity": "Equities", "Cash": "Cash"}
+ASSET_CODES = {
+    "DE_GOV_1_3Y": "IBGDE13E", "DE_GOV_3_5Y": "IBGDE35E", "DE_GOV_7_10Y": "IBGDE710E",
+    "DE_GOV_10Y_PLUS": "IBGDE10PE", "FR_GOV_1_3Y": "IBGFR13E", "FR_GOV_7_10Y": "IBGFR710E",
+    "IT_GOV_1_3Y": "IBGIT13E", "IT_GOV_7_10Y": "IBGIT710E", "EA_GOV_ALL": "IBBEU008E",
+    "EA_GOV_1_3Y": "IBGEU13E", "EA_GOV_7_10Y": "IBGEU710E", "US_GOV_1_3Y": "IBGUS13U",
+    "US_GOV_3_5Y": "IBGUS35U", "US_GOV_7_10Y": "IBGUS710U", "US_GOV_10Y_PLUS": "IBGUS10PU",
+    "US_GOV_ALL": "IBGUS00U", "EUR_CORP_IG": "ICREUIGE", "US_CORP_IG": "ICRUSIGU",
+    "EUROSTOXX50": "SX5T", "DAX": "DAXK", "SP500": "SPXT", "EUR_CASH": "ESTRCMPE", "US_CASH": "SOFRCMPU",
+}
+assets_long, assets_meta_rows = [], []
+for tk, name, cls, jur, ccy, dur, _ in ASSETS:
+    code = ASSET_CODES[tk]
+    if cls == "Government Bond":   # the real metadata mislabels these levels as a yield
+        field, desc = "TOT_RETURN", "Total Return Yield"
+    else:
+        field, desc = "tri_today", "Total return index level on the pricing date"
+    assets_meta_rows.append({"jurisdiction": JUR.get(jur, jur), "category": CATEGORY[cls],
+                             "indicator": f"{name} Total Return Index ({ccy}) - SYNTHETIC",
+                             "index": code, "field": field, "description": desc})
+    assets_long.append(pd.DataFrame({"date": DATES.strftime(DAYFIRST), "index": code,
+                                     "price": levels[tk].round(4).to_numpy(), "price_description": field}))
+assets_out = pd.concat(assets_long, ignore_index=True)
+assets_meta_out = pd.DataFrame(assets_meta_rows)
+
+FIN_CODES = {
+    "EURUSD": "EURUSD Curncy", "ESTR": "ESTRON Index", "SOFR": "SOFRRATE Index", "EURIBOR_3M": "EUR003M Index",
+    "EUROSTOXX50_PX": "SX5E Index", "SP500_PX": "SPX Index", "VIX": "VIX Index", "VSTOXX": "V2X Index",
+    "DE_10Y_YLD": "GDBR10 Index", "DE_2Y_YLD": "GDBR2 Index", "IT_10Y_YLD": "GBTPGR10 Index",
+    "FR_10Y_YLD": "GFRN10 Index", "US_10Y_YLD": "USGG10YR Index", "US_2Y_YLD": "USGG2YR Index",
+    "BUND_FUT": "RX1 Comdty", "EUR_SWAP_2Y": "EUSA2 Curncy", "EUR_SWAP_10Y": "EUSA10 Curncy",
+    "USD_SWAP_2Y": "USOSFR2 Curncy", "USD_SWAP_10Y": "USOSFR10 Curncy", "CDS_DE_5Y": "GRMN CDS USD SR 5Y",
+    "CDS_FR_5Y": "FRTR CDS USD SR 5Y", "CDS_IT_5Y": "ITAL CDS USD SR 5Y", "CDS_US_5Y": "USGB CDS EUR SR 5Y",
+    "ITRAXX_MAIN": "ITRXEBE Index", "CDX_IG": "CDXIG5 Index", "EUR_IG_OAS": "LECPOAS Index",
+    "US_IG_OAS": "LUACOAS Index", "BRENT": "CO1 Comdty", "GOLD": "XAU Curncy",
+}
+FIN_CATEGORY = {"FX": "Currency", "Money market": "Money Market", "Equity index": "Equity Index",
+                "Volatility": "Volatility", "Government bond": "Government Bond Yield", "Bond future": "Bond Futures",
+                "Swap": "Interest Rate Swaps", "CDS": "Credit Default Swaps", "Corporate bond": "Corporate Bond Index",
+                "Commodity": "Commodities"}
+financial_out = financial.assign(date=financial["date"].dt.strftime(DAYFIRST),
+                                 index=financial["series_id"].map(FIN_CODES),
+                                 price_description="close_price")[["date", "index", "value", "price_description"]]
+financial_out = financial_out.rename(columns={"value": "price"})
+financial_meta_out = pd.DataFrame([
+    {"jurisdiction": JUR.get(j, j), "category": FIN_CATEGORY[c], "indicator": f"{ind} - SYNTHETIC",
+     "index": FIN_CODES[sid], "field": "close_price", "description": "Close Price"}
+    for sid, (_v, j, c, ind, _f, _d) in fin_series.items()
+])
+
+# Macro: HICP/CPI become price INDICES (the real file has P023ZH-style HICP indices),
+# dates move to the FIRST day of the reference period (PMI stays at the month end).
+MACRO_CODES = {  # internal id -> (identifier, category, indicator, database, dataType, aggregation)
+    "EA_HICP_YOY": ("P023ZH", "Prices", "HICP - Overall index", "ECB Data Portal", "INDEX", "Average"),
+    "EA_CORE_HICP_YOY": ("P023ZX", "Prices", "HICP - All-items excluding energy and food", "ECB Data Portal",
+                         "INDEX", "Average"),
+    "DE_HICP_YOY": ("P023DE", "Prices", "HICP - Overall index", "ECB Data Portal", "INDEX", "Average"),
+    "FR_HICP_YOY": ("P023FR", "Prices", "HICP - Overall index", "ECB Data Portal", "INDEX", "Average"),
+    "IT_HICP_YOY": ("P023IT", "Prices", "HICP - Overall index", "ECB Data Portal", "INDEX", "Average"),
+    "US_CPI_YOY": ("CPIAUC", "Prices", "CPI - All items", "FRED", "INDEX", "Average"),
+    "US_CORE_CPI_YOY": ("CPILFE", "Prices", "CPI - All items less food and energy", "FRED", "INDEX", "Average"),
+    "EA_UNEMP": ("LRHUTT", "Labour market", "Unemployment rate", "Eurostat", "PERCENT", "Average"),
+    "US_UNEMP": ("UNRATE", "Labour market", "Unemployment rate", "FRED", "PERCENT", "Average"),
+    "EA_PMI_MANUF": ("PMIMEZ", "Business surveys", "Manufacturing PMI", "S&P Global", "INDEX", "Average"),
+    "US_ISM_MANUF": ("ISMMAN", "Business surveys", "ISM manufacturing PMI", "ISM", "INDEX", "Average"),
+    "EA_CONS_CONF": ("CONFEZ", "Consumer surveys", "Consumer confidence indicator", "European Commission",
+                     "BALANCE", "Average"),
+    "US_CONS_SENT": ("UMCSNT", "Consumer surveys", "University of Michigan consumer sentiment", "FRED", "INDEX",
+                     "Average"),
+    "EA_M3_YOY": ("M3EZYY", "Money", "Monetary aggregate M3, annual growth rate", "ECB Data Portal",
+                  "PERCENT_CHANGE", "End of period"),
+    "ECB_DEPO_RATE": ("ECBDFR", "Policy rates", "ECB deposit facility rate", "ECB Data Portal", "PERCENT",
+                      "End of period"),
+    "FED_FUNDS_UPPER": ("FDTRUP", "Policy rates", "Fed funds target range, upper bound", "FRED", "PERCENT",
+                        "End of period"),
+    "EA_GDP_QOQ": ("GDPEZQ", "National accounts", "Real GDP, % change q/q", "Eurostat", "PERCENT_CHANGE", "Sum"),
+    "DE_GDP_QOQ": ("GDPDEQ", "National accounts", "Real GDP, % change q/q", "Eurostat", "PERCENT_CHANGE", "Sum"),
+    "US_GDP_SAAR": ("GDPUSQ", "National accounts", "Real GDP, % change q/q annualised", "FRED", "PERCENT_CHANGE",
+                    "Sum"),
+}
+PMI_IDS = {"EA_PMI_MANUF", "US_ISM_MANUF"}
+
+
+def yoy_to_index(yoy: pd.Series) -> pd.Series:
+    """Price index whose 12-month change reproduces the y/y path (base ~100)."""
+    idx = np.empty(len(yoy))
+    for t, y in enumerate(yoy.to_numpy()):
+        idx[t] = (100 * (1 + y / 100) ** (t / 12)) if t < 12 else idx[t - 12] * (1 + y / 100)
+    return pd.Series(idx, index=yoy.index)
+
+
+macro_out_frames, macro_meta_rows = [], []
+for sid, (code, cat, ind, db, dtype, agg) in MACRO_CODES.items():
+    g = macro[macro.series_id == sid].set_index("date")["value"]
+    _d, _v, jur, _ind, freq, _u, _dt = macro_series[sid]
+    if cat == "Prices":
+        g = yoy_to_index(g).round(2)
+    if sid in PMI_IDS:
+        dates = g.index                                            # last day of the month
+    else:
+        dates = g.index.to_period("Q" if freq == "Q" else "M").start_time  # first day
+    macro_out_frames.append(pd.DataFrame({"date": dates.strftime(DAYFIRST), "identifier": code,
+                                          "value": g.to_numpy()}))
+    macro_meta_rows.append({"identifier": code, "jurisdiction": JUR.get(jur, jur), "category": cat,
+                            "indicator": f"{ind} - SYNTHETIC", "database": db,
+                            "frequencyDescription": {"M": "Monthly", "Q": "Quarterly"}[freq],
+                            "dataType": dtype, "aggregationTypeDescription": agg})
+macro_out = pd.concat(macro_out_frames, ignore_index=True)
+macro_meta_out = pd.DataFrame(macro_meta_rows)
+
+# News: stories with versions and Reuters-style topic lists (exact names from the annex).
+TOPIC_MAP = {
+    "central_banks": ["Central Banks / Central Bank Events", "Central Bank Interest Rates / Policy",
+                      "Monetary / Fiscal Policy / Policy Makers", "Economic News"],
+    "macro": ["Economic News"],
+    "markets": ["Equities", "Equities Markets"],
+    "rates": ["Fixed Income", "Debt / Fixed Income Markets", "Italy", "Euro Zone"],
+    "commodities": ["Commodities", "Commodities Markets"],
+    "fx": ["Foreign Exchange"],
+    "politics": ["Government / Politics"],
+    "credit": ["Fixed Income", "Credit Markets"],
+    "technology": ["Equities", "Technology"],
+}
+KEYWORD_TOPICS = [  # (word in the title, extra topics)
+    ("ECB", ["European Central Bank", "Euro Zone"]), ("Fed", ["United States"]),
+    ("inflation", ["Inflation Data"]), ("consumer prices", ["Inflation Data", "United States"]),
+    ("PMI", ["Purchasing Managers Survey Data"]), ("unemployment", ["Employment / Unemployment Data / Policy"]),
+    ("Euro zone", ["Euro Zone"]), ("U.S.", ["United States"]), ("Wall Street", ["United States"]),
+    ("European shares", ["Europe"]), ("Oil", ["Crude Oil"]), ("Gold", ["Gold"]),
+    ("Trade talks", ["International Trade"]), ("Dollar", ["United States"]), ("Euro ", ["Euro Zone"]),
+]
+
+
+def topics_for(title: str, topic: str) -> list[str]:
+    out = list(TOPIC_MAP.get(topic, ["Major News"]))
+    for word, extra in KEYWORD_TOPICS:
+        if word.lower() in title.lower():
+            out += [t for t in extra if t not in out]
+    return out
+
+
+rows = []
+for i, r in enumerate(news_df.itertuples()):
+    pub = r.published_at.tz_localize("UTC")
+    sid, topics = f"SYN{i:07d}", topics_for(r.headline, r.topic)
+    updated = r.topic == "central_banks" or rng.random() < 0.2
+    base = {"story_id": sid, "topic_name": "|".join(topics), "has_body": True}
+    rows.append({**base, "published_at": pub, "version_created": pub - pd.Timedelta(seconds=30), "version": 1,
+                 "version_role": "first", "title": r.headline, "body": r.body})
+    if updated:   # a later version of the same story (an update), sometimes the next day
+        later = pub + (pd.Timedelta(hours=18) if rng.random() < 0.1 else
+                       pd.Timedelta(minutes=int(rng.integers(5, 120))))
+        rows.append({**base, "published_at": later, "version_created": later - pd.Timedelta(seconds=30),
+                     "version": int(rng.integers(2, 4)), "version_role": "last",
+                     "title": f"UPDATE 1-{r.headline}", "body": r.body + " Adds details and market reaction."})
+news_out = pd.DataFrame(rows)
+news_out = news_out[news_out.published_at <= pd.Timestamp(END, tz="UTC") + pd.Timedelta(hours=23, minutes=59)]
+news_out = news_out.sort_values(["published_at", "story_id"]).reset_index(drop=True)
+news_out.insert(1, "date", news_out["published_at"].dt.strftime("%Y-%m-%d"))
+topic_counts = (news_out.drop_duplicates("story_id")["topic_name"].str.split("|").explode()
+                .value_counts().rename_axis("topic").reset_index(name="count"))
+
 # --------------------------------------------------------------------------- write
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-levels.round(4).to_csv(DATA_DIR / "assets.csv")
-assets_meta.to_csv(DATA_DIR / "assets-metadata.csv", index=False)
-financial.to_csv(DATA_DIR / "financial.csv", index=False)
-financial_meta.to_csv(DATA_DIR / "financial-metadata.csv", index=False)
-macro.to_csv(DATA_DIR / "macro.csv", index=False)
-macro_meta.to_csv(DATA_DIR / "macro-metadata.csv", index=False)
-news_df.to_csv(DATA_DIR / "news.csv", index=False)
+for old in ["assets-metadata.csv", "financial-metadata.csv", "macro-metadata.csv"]:
+    (DATA_DIR / old).unlink(missing_ok=True)            # pre-16-Nov file names
+assets_out.to_csv(DATA_DIR / "assets.csv", index=False)
+assets_meta_out.to_csv(DATA_DIR / "assets_metadata.csv", index=False, encoding="utf-8-sig")
+financial_out.to_csv(DATA_DIR / "financial.csv", index=False)
+financial_meta_out.to_csv(DATA_DIR / "financial_metadata.csv", index=False, encoding="utf-8-sig")
+macro_out.to_csv(DATA_DIR / "macro.csv", index=False)
+macro_meta_out.to_csv(DATA_DIR / "macro_metadata.csv", index=False, encoding="utf-8-sig")
+news_out.to_csv(DATA_DIR / "news.csv", index=False)
+topic_counts.to_csv(DATA_DIR / "news_topics.csv", index=False)
 
 if __name__ == "__main__":
     print(f"Wrote synthetic data to {DATA_DIR}")
     print(f"  assets:    {levels.shape[0]} days x {levels.shape[1]} indices")
     print(f"  financial: {financial.series_id.nunique()} series, {len(financial)} rows")
     print(f"  macro:     {macro.series_id.nunique()} series, {len(macro)} rows")
-    print(f"  news:      {len(news_df)} items")
+    print(f"  news:      {news_out.story_id.nunique()} stories, {len(news_out)} versions, "
+          f"{len(topic_counts)} topics")
     ann = returns.mean() * 252
     vol = returns.std() * np.sqrt(252)
     print("\nAnnualised return / vol (sanity check):")

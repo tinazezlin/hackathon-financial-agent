@@ -12,7 +12,7 @@ import pytest
 
 from src.config import REPORTING_DATES
 from src.core.results import sha256_file
-from src.utils import data
+from src.utils import universe
 from src.utils.analytics import check_constraints
 
 OUT = Path(__file__).resolve().parents[1] / "outputs"
@@ -40,7 +40,7 @@ def test_all_dates_present(weights):
 
 
 def test_all_assets_present(weights):
-    assert set(weights.columns) == set(data.read_assets_metadata()["ticker"])
+    assert set(weights.columns) == set(universe.tickers())
 
 
 def test_rows_sum_to_one_and_ten_decimals(session_dir, weights):
@@ -50,7 +50,7 @@ def test_rows_sum_to_one_and_ten_decimals(session_dir, weights):
 
 
 def test_constraints(weights):
-    meta = data.read_assets_metadata()
+    meta = universe.assets_meta()
     for d, row in weights.iterrows():
         assert check_constraints(row, meta) == [], d
 
