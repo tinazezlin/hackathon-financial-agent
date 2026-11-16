@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.config import LIMITS, STRATEGIC_BENCHMARK
+from src.config import LIMITS, REPORTING_DATES, STRATEGIC_BENCHMARK
 from src.utils import data, pit
 from src.utils.analytics import (check_constraints, portfolio_metrics, project_to_constraints, round_weights,
                                  to_base_currency)
@@ -35,15 +35,15 @@ def test_projection_keeps_compliant_portfolio():
 
 
 def test_rounding_cannot_breach_cap():
-    # Three US assets at exactly 20% in total; each one rounds UP at 6 decimals,
-    # so naive rounding gives 20.0001% > cap.
+    # Three US assets at exactly 20% in total; each one rounds UP at 10 decimals,
+    # so naive rounding gives 20.00000001% > cap.
     us = ["SP500", "US_GOV_1_3Y", "US_CASH"]
     w = pd.Series(0.0, index=TICKERS)
     w[us] = 0.2 / 3
     non_us = set(META.loc[META["jurisdiction"] != "US", "ticker"])
     rest = [t for t in TICKERS if t in non_us]
     w[rest] = 0.8 / len(rest)
-    assert w.round(6)[us].sum() > 0.2                          # the bug we guard against
+    assert w.round(10)[us].sum() > 0.2                          # the bug we guard against
     assert check_constraints(round_weights(w), META, tol=0) == []
 
 
@@ -85,7 +85,17 @@ def test_policy_rates_not_lagged():
     assert fed["date"] == pd.Timestamp("2025-10-31") and fed["value"] == 4.0  # cut on 2025-10-30
 
 
-def test_weekend_reporting_date_uses_friday():
+def test_reporting_dates_match_deliverables():
+    assert REPORTING_DATES == ["2025-10-31", "2025-11-28", "2025-12-29", "2026-01-30", "2026-02-27", "2026-03-31"]
+
+
+def test_round_weights_no_float_artefacts():
+    w = pd.Series(0.0, index=TICKERS)
+    w["DE_GOV_1_3Y"], w["EUR_CASH"] = 0.13, 0.87
+    assert round_weights(w)["DE_GOV_1_3Y"] == 0.13            # not 0.1299999999
+
+
+def test_weekend_date_uses_friday():
     assert pit.assets_asof("2026-01-31").index.max() == pd.Timestamp("2026-01-30")
 
 

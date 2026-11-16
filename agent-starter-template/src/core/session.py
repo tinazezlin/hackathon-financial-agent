@@ -1,7 +1,8 @@
 """Sessions (MOCK of the hackathon's src/core/session.py - do not edit there).
 
 One session = one run over the reporting dates. Its id names the output folder
-outputs/<session id>/ and groups the Langfuse traces.
+outputs/<session id>/ and groups the Langfuse traces. session.url is the Langfuse
+session link that is submitted together with the folder (deliverables.pdf).
 """
 
 from __future__ import annotations
@@ -23,6 +24,20 @@ class Session:
     dir: Path
     results: dict = field(default_factory=dict)   # date -> final graph state
     hashes: dict = field(default_factory=dict)    # date -> {"pdf": sha256, "weights": sha256}
+
+    @property
+    def url(self) -> str | None:
+        """Langfuse session URL (None when tracing is off)."""
+        if not langfuse_enabled():
+            return None
+        from langfuse import get_client
+
+        host = os.getenv("LANGFUSE_HOST") or os.getenv("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
+        try:
+            pid = get_client()._get_project_id()
+        except Exception:
+            pid = None
+        return f"{host.rstrip('/')}/project/{pid}/sessions/{self.id}" if pid else None
 
 
 def langfuse_enabled() -> bool:

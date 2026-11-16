@@ -14,9 +14,11 @@ def test_pipeline_mock(tmp_path, monkeypatch):
     from src.utils.analytics import check_constraints
 
     s = start_session(tmp_path)
-    res = run_date(build_workflow(), "2026-02-28", s)
-    assert (s.dir / "report_2026-02-28.pdf").stat().st_size > 10_000
-    w = pd.Series(res["weights"])
+    res = run_date(build_workflow(), "2026-02-27", "mock", s)
+    assert (s.dir / "2026-02-27.pdf").stat().st_size > 10_000
+    w = pd.Series(res["approved_weights"])
+    assert set(w.index) == set(data.read_assets_metadata()["ticker"])  # all 23, zeros included
     assert check_constraints(w, data.read_assets_metadata()) == []
-    df = pd.read_csv(write_weights(s), index_col=0)
-    assert list(df.index) == ["2026-02-28"]
+    df = pd.read_csv(write_weights({"2026-02-27": res}, s), index_col=0)
+    assert list(df.index) == ["2026-02-27"]
+    assert {p.name for p in s.dir.iterdir()} == {"2026-02-27.pdf", "weights.csv"}

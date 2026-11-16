@@ -16,7 +16,7 @@ class PortfolioState(TypedDict, total=False):
     signals: list[dict]                      # [{ticker, view(-2..2), confidence, reason}]
     proposed_weights: dict[str, float]       # PM proposal (raw, before checks)
     pm_rationale: str
-    weights: dict[str, float]                # final approved weights
+    approved_weights: dict[str, float]       # final approved weights (all assets, zeros included)
     violations: list[str]                    # constraint breaches found in the last review
     revision_count: int
     risk_feedback: str                       # message from risk review back to the PM

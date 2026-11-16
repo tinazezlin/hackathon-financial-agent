@@ -9,15 +9,15 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-# Reporting (rebalancing) dates exactly as written in the briefing.
-# 2026-01-31 and 2026-02-28 are Saturdays: data functions use the last
-# observation ON OR BEFORE the date (see PITFALLS.md).
+# Reporting (rebalancing) dates as in deliverables.pdf (2026-11-11). The original
+# briefing listed 30 Dec / 31 Jan / 28 Feb; the deliverables list is the newer one
+# and uses business days only. Check the real template's list on the day.
 REPORTING_DATES = [
     "2025-10-31",
     "2025-11-28",
-    "2025-12-30",
-    "2026-01-31",
-    "2026-02-28",
+    "2025-12-29",
+    "2026-01-30",
+    "2026-02-27",
     "2026-03-31",
 ]
 

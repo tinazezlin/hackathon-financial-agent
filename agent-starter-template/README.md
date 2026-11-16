@@ -24,19 +24,22 @@ python3 -m venv .venv
 cp .env.example .env        # add your GROQ_API_KEY (and Langfuse keys if you want tracing)
 ```
 
-Mock mode (`LLM_PROVIDER=mock`) needs no keys at all. Open `notebook.ipynb` for the interactive flow.
+Mock mode (`LLM_PROVIDER=mock`) needs no keys at all. Open `multi_agents_market.ipynb` for the interactive flow.
 
 ## Layout
 
 ```
-main.py                      CLI: runs dates, writes weights.csv only if ALL dates succeed
-notebook.ipynb               interactive version
+main.py                      CLI: runs dates (retries a failed date in the same session),
+                             writes weights.csv only when every date has a result
+multi_agents_market.ipynb    interactive version (same name as the official notebook)
 src/config.py                dates, constraints, extra limits, strategic benchmark, model id
 src/core/                    = hackathon "DO NOT CHANGE" folder (mocked here)
   llm.py                     get_llm(model_id): groq | ollama | openai | mock
   session.py                 start_session() -> outputs/<session id>/
-  run.py                     run_date(): one Langfuse trace per date, hashes outputs
-  results.py                 calls build_report(), writes weights.csv + hashes.json
+  run.py                     run_date(workflow, date, model_name, session): one Langfuse
+                             trace per date, fingerprints of PDF + weights on the trace
+  results.py                 checks approved_weights has all 23 assets, calls build_report(),
+                             write_weights(results, session) -> weights.csv (10 decimals)
 src/utils/
   data.py                    read_assets / read_financial / read_macro / read_news (raw)
   pit.py                     point-in-time views, the ONLY data access decisions should use
@@ -67,7 +70,21 @@ START -> analyst <-> tools (asset stats, market indicators, macro snapshot, news
      risk_manager -> END          risk commentary (LLM)
 ```
 
+## Output (as in deliverables.pdf)
+
+```
+outputs/<session id>/          exactly 7 files
+├── 2025-10-31.pdf … 2026-03-31.pdf   one report per date (build_report)
+└── weights.csv                date + 23 asset columns, 10 decimals, rows sum to 1
+```
+The final graph state must hold `approved_weights` with all 23 assets (zeros included).
+Submit the folder plus the Langfuse session URL (`session.url`).
+
 ## Synthetic data (guessing the real formats)
+
+> The organisers' `data-detailed.pdf` shows the real formats differ (long files, day-first
+> dates, code identifiers, macro dated at the start of the month, versioned news with topic
+> lists). Aligning the synthetic data with them is the next step.
 
 | file | shape |
 |---|---|

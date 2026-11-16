@@ -144,7 +144,7 @@ def build_report(result, path):
     """Write the PDF report for one reporting date. DO NOT change name/signature."""
     as_of = result["as_of_date"]
     path = Path(path)
-    w = pd.Series(result["weights"])
+    w = pd.Series(result["approved_weights"])
     b = pd.Series(STRATEGIC_BENCHMARK)
     m = result.get("risk_metrics", {})
     expo = result.get("exposures", {})

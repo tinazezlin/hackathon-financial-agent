@@ -203,7 +203,7 @@ def risk_review(state: dict) -> dict:
     bench = pd.Series(STRATEGIC_BENCHMARK).reindex(tickers).fillna(0.0)
     metrics = portfolio_metrics(w, rets, meta, benchmark=bench)
     expo = {f: exposures(w, meta, f).round(4).to_dict() for f in ("asset_class", "jurisdiction", "currency")}
-    return {"weights": w.to_dict(), "violations": violations, "risk_feedback": "",
+    return {"approved_weights": w.to_dict(), "violations": violations, "risk_feedback": "",
             "adjustments": adjustments, "risk_metrics": metrics, "exposures": expo}
 
 
@@ -219,7 +219,7 @@ def risk_manager(state: dict) -> dict:
                f"error {m['tracking_error']:.2%}, 1d VaR95 {m['var95_1d']:.2%}, duration {m['duration']:.2f}. "
                f"Adjustments: {state.get('adjustments') or 'none'}.")
         return {"risk_commentary": txt}
-    payload = {"weights": {k: v for k, v in state["weights"].items() if v > 0}, "exposures": state["exposures"],
+    payload = {"weights": {k: v for k, v in state["approved_weights"].items() if v > 0}, "exposures": state["exposures"],
                "risk_metrics": m, "adjustments": state.get("adjustments"), "pm_rationale": state["pm_rationale"]}
     resp = get_llm(MODEL_ID).invoke([_sys(prompts.RISK_MANAGER_SYSTEM, state),
                                      HumanMessage(json.dumps(payload, default=str))],
