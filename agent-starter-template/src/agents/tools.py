@@ -18,6 +18,7 @@ from langgraph.prebuilt import InjectedState
 from src.utils import pit, universe
 from src.utils.analytics import asset_statistics
 from src.utils.news import read_topic_index
+from src.utils.polymarket import policy_expectations
 
 # Exact Reuters topic names (data-detailed.pdf), in priority order for the analyst.
 # There is no "Federal Reserve" topic: Fed news comes via the central-bank topics.
@@ -104,6 +105,24 @@ def recent_news_text(as_of: str, lookback_days: int = 14, max_items: int = 30) -
             f"each story, repeated headlines merged):\n" + "\n".join(lines))
 
 
+def policy_expectations_text(as_of: str) -> str:
+    out = [f"Prediction-market odds for the next ECB and Fed meetings, as priced at the end of {as_of} (UTC). "
+           "prob = YES price normalised over the exclusive answers; chg_1w = change vs one week earlier "
+           "(probability points). These are market expectations, not facts. Thin markets can be stale."]
+    for bank in ("ECB", "Fed"):
+        e = policy_expectations(as_of, bank)
+        if e is None:
+            out.append(f"\n{bank}: no prediction-market data available for the next meeting.")
+            continue
+        t = e["table"].assign(prob=lambda d: (d["prob"] * 100).round(1),
+                              chg_1w=lambda d: (d["chg_1w"] * 100).round(1))
+        t.columns = ["prob_%", "chg_1w_pp"]
+        out.append(f"\n{bank} - {e['event']} (meeting {e['meeting']:%Y-%m-%d}; last price "
+                   f"{e['as_of_price_date']:%Y-%m-%d}; raw YES sum {e['raw_yes_sum']:.2f}; source: {e['source']})\n"
+                   + t.to_string())
+    return "\n".join(out)
+
+
 # --------------------------------------------------------------------------- LangChain tools
 @tool
 def get_asset_statistics(state: Annotated[dict, InjectedState], lookback_days: int = 252) -> str:
@@ -133,4 +152,12 @@ def get_recent_news(state: Annotated[dict, InjectedState], lookback_days: int = 
     return recent_news_text(state["as_of_date"], int(lookback_days))
 
 
-ANALYST_TOOLS = [get_asset_statistics, get_market_indicators, get_macro_snapshot, get_recent_news]
+@tool
+def get_policy_expectations(state: Annotated[dict, InjectedState]) -> str:
+    """Market-implied probabilities (prediction markets) of each decision at the next ECB and Fed
+    meetings, as priced at the end of the reporting date, with the change over the last week."""
+    return policy_expectations_text(state["as_of_date"])
+
+
+ANALYST_TOOLS = [get_asset_statistics, get_market_indicators, get_macro_snapshot, get_recent_news,
+                 get_policy_expectations]

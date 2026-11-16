@@ -127,6 +127,9 @@ come from the organisers' detailed documents of 16 Nov (`deliverables.pdf`,
     - **[seen] One run proves nothing about a fix.** In our second analyst run an
       invented-causality error disappeared without any fix: it was just a different
       sample. Judge a prompt or tool change on 3-5 runs and count errors.
+    - **[seen] Python's `hash()` of a string changes between runs** (hash randomisation),
+      so seeding random numbers with it makes "deterministic" code non-reproducible. Use
+      `zlib.crc32` or a fixed seed.
 25. **Latency and rate limits.** Our practice run took ~150 s per date (Groq free tier).
     At the event the proxy is shared by 8 teams. Keep prompts compact, avoid
     unnecessary tool loops, start the final run early.
@@ -226,3 +229,9 @@ come from the organisers' detailed documents of 16 Nov (`deliverables.pdf`,
       deadlines). Thin markets can be stale: check liquidity before trusting a price.
     - **[docs] `discover_tags("ECB")` doesn't find `european-central-bank`**: read tags
       from a known event, or search with `query`.
+    - **There is no "next meeting" field.** Select the events open at T by schedule
+      (`start_date_max=T`, `end_date_min=T`) and take the one with the earliest
+      `schedule.end_date`. Never filter on `closed`, which describes today.
+    - **We could not test the library before the event** (it isn't on pip). Our wrapper is
+      written from the PDF; the column names returned by `get_prices_by_event` are a guess.
+      Run the check cell in the notebook first thing on day one.

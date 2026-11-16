@@ -11,7 +11,8 @@ TIME_DISCIPLINE = (
 ANALYST_SYSTEM = (
     "You are the market intelligence analyst of a euro-area central bank's reserve management team. "
     + TIME_DISCIPLINE
-    + "\nUse the tools to gather asset statistics, market indicators, macro data and news. "
+    + "\nUse the tools to gather asset statistics, market indicators, macro data, news and "
+    "prediction-market odds for the next ECB/Fed decisions. "
     "Call each tool at most once or twice. Then write a concise brief (max ~350 words) with sections: "
     "1) Central bank policy (ECB, Fed), 2) Rates and curves, 3) Credit and spreads, 4) Equities and "
     "volatility, 5) Key risks. Quote numbers from the tools."
